@@ -1,20 +1,23 @@
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.io.*;
+import java.net.*;
 import java.util.Scanner;
 
 public class WeatherApp {
-    private static final String API_KEY = "604dba7a2b01482093463018250806";
     private static final String BASE_URL = "http://api.weatherapi.com/v1/current.json";
 
     public static void main(String[] args) {
+        String apiKey = getApiKey();
+        if (apiKey == null || apiKey.isEmpty()) {
+            System.out.println("❌ API key missing. Make sure it's in the .env file.");
+            return;
+        }
+
         Scanner scanner = new Scanner(System.in);
         System.out.print("Enter city name: ");
         String city = scanner.nextLine().trim();
 
         try {
-            String urlStr = BASE_URL + "?key=" + API_KEY + "&q=" + city;
+            String urlStr = BASE_URL + "?key=" + apiKey + "&q=" + city;
             URL url = new URL(urlStr);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
@@ -34,7 +37,6 @@ public class WeatherApp {
             }
             reader.close();
 
-            // Extract key info manually (very basic JSON parsing)
             String response = json.toString();
             String temp = extract(response, "\"temp_c\":", ",");
             String condition = extract(response, "\"text\":\"", "\"");
@@ -50,6 +52,21 @@ public class WeatherApp {
         }
     }
 
+    private static String getApiKey() {
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(".env"));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("API_KEY=")) {
+                    return line.split("=", 2)[1].trim();
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("⚠️ Could not read .env file.");
+        }
+        return null;
+    }
+
     private static String extract(String source, String start, String end) {
         try {
             int startIndex = source.indexOf(start) + start.length();
@@ -60,5 +77,3 @@ public class WeatherApp {
         }
     }
 }
-
-
